@@ -1,78 +1,51 @@
 package com.example;
 
-import java.io.*;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.List;
-
-public class NotesStore {
-    private final String filePath;
-
-    public NotesStore(String filePath) {
-        this.filePath = filePath;
-        try {
-            Path dir = Paths.get(filePath).getParent();
-            if (dir != null) {
-                Files.createDirectories(dir);
-            }
-            if (!Files.exists(Paths.get(filePath))) {
-                Files.createFile(Paths.get(filePath));
-            }
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to initialize notes file", e);
+public class App {
+    public static void main(String[] args) {
+        if (args.length == 0) {
+            System.err.println("Usage: --cmd=add/list/count [--text=...] [--id=...]");
+            return;
         }
-    }
 
-    public List<String> loadNotes() {
-        List<String> notes = new ArrayList<>();
-        try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                if (!line.trim().isEmpty()) {
-                    notes.add(line);
+        String cmd = null;
+        String text = null;
+        Integer id = null;
+
+        for (String arg : args) {
+            if (arg.startsWith("--cmd=")) {
+                cmd = arg.substring(6);
+            } else if (arg.startsWith("--text=")) {
+                text = arg.substring(7);
+            } else if (arg.startsWith("--id=")) {
+                try {
+                    id = Integer.parseInt(arg.substring(5));
+                } catch (NumberFormatException ignored) { }
+            }
+        }
+
+        NotesStore store = new NotesStore("data/notes.csv");
+
+        if ("add".equals(cmd)) {
+            if (text == null || text.trim().isEmpty()) {
+                System.err.println("Error: --text is required for 'add'");
+                return;
+            }
+            store.addNote(text);
+            System.out.println("Note added.");
+        } else if ("list".equals(cmd)) {
+            var notes = store.getAllNotes();
+            if (notes.isEmpty()) {
+                System.out.println("(empty)");
+            } else {
+                for (String note : notes) {
+                    System.out.println(note);
                 }
             }
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to read notes", e);
-        }
-        return notes;
-    }
-
-    private void saveNotes(List<String> notes) {
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(filePath))) {
-            for (String note : notes) {
-                writer.write(note);
-                writer.newLine();
-            }
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to write notes", e);
-        }
-    }
-
-    public void addNote(String text) {
-        List<String> notes = loadNotes();
-        int nextId = notes.isEmpty() ? 1 : parseId(notes.get(notes.size() - 1)) + 1;
-        notes.add(nextId + ";" + text);
-        saveNotes(notes);
-    }
-
-    public List<String> getAllNotes() {
-        return loadNotes();
-    }
-
-    public int getNoteCount() {
-        return loadNotes().size();
-    }
-
-    private int parseId(String line) {
-        int semicolon = line.indexOf(';');
-        if (semicolon == -1) return 0;
-        try {
-            return Integer.parseInt(line.substring(0, semicolon));
-        } catch (NumberFormatException e) {
-            return 0;
+        } else if ("count".equals(cmd)) {
+            System.out.println(store.getNoteCount());
+        } else {
+            System.err.println("Unknown command: " + cmd);
+            System.err.println("Supported: add, list, count");
         }
     }
 }
