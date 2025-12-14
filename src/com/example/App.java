@@ -32,6 +32,8 @@ public class App {
                     System.out.println(n);
                 }
             }
+            } else if ("count".equals(cmd)) {
+            System.out.println(NotesStore.readAll().size());
 
         } else {
             System.out.println("Unknown command");
