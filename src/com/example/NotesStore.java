@@ -4,7 +4,7 @@ import java.io.*;
 import java.util.*;
 
 public class NotesStore {
-    private static final String FILE_PATH = "data/notes.csv";
+   private static final String FILE_PATH = "/app/data/notes.csv";
 
     public static List<String> readAll() {
         List<String> notes = new ArrayList<>();
